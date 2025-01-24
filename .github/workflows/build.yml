@@ -1,0 +1,261 @@
+name: build
+on:
+  push:
+    branches:
+    - master
+concurrency:
+  # Cancels pending runs when a PR gets updated.
+  group: ${{ github.head_ref || github.run_id }}-${{ github.actor }}
+  cancel-in-progress: true
+
+jobs:
+  CreatTag:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Create a new tag
+      run: |
+        TAG_NAME="nightly"
+        git tag $TAG_NAME
+        git push origin $TAG_NAME
+  help:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: HELP
+      run: |
+        mkdir .zig && cd .zig
+        curl -o zig.tar.xz "https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz"
+        tar -xf zig.tar.xz && rm zig.tar.xz
+        mv * zig && cd zig && export PATH=$PATH:$PWD
+        cd ../..
+        zig build --help        
+  kryo_Fast:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup llvm
+      run: |
+        curl -o llvm.sh https://apt.llvm.org/llvm.sh
+        sudo chmod 777 llvm.sh
+        sudo ./llvm.sh 19 all
+    - name: Build
+      run: |
+        mkdir .zig && cd .zig
+        curl -o zig.tar.xz "https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz"
+        tar -xf zig.tar.xz && rm zig.tar.xz
+        mv * zig && cd zig && export PATH=$PATH:$PWD
+        cd ../..
+        zig build -Dtarget="aarch64-linux-musl" -Duse_llvm=true -Dstrip=true -Dcpu="kryo" -Doptimize=ReleaseFast -fno-reference-trace --zig-lib-dir "$PWD/.zig/zig/lib"
+    - name: Pack output
+      run: |
+        mv zig-out nightly
+        7z a kryo_fast.7z nightly/bin/flow
+        tar -cJf kryo_fast.tar.xz nightly/bin/flow
+        tar -cf kryo_fast.tar nightly/bin/flow
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: nightly
+        make_latest: true
+        files: |
+          kryo_fast.tar
+          kryo_fast.tar.xz
+          kryo_fast.7z
+    - name: Check zig binary size
+      run: |
+        ls -lh nightly/bin
+        ls -l nightly/bin
+        
+  kryo_Small:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup llvm
+      run: |
+        curl -o llvm.sh https://apt.llvm.org/llvm.sh
+        sudo chmod 777 llvm.sh
+        sudo ./llvm.sh 19 all
+    - name: Build
+      run: |
+        mkdir .zig && cd .zig
+        curl -o zig.tar.xz "https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz"
+        tar -xf zig.tar.xz && rm zig.tar.xz
+        mv * zig && cd zig && export PATH=$PATH:$PWD
+        cd ../..
+        zig build -Dtarget="aarch64-linux-musl" -Duse_llvm=true -Dstrip=true -Dcpu="kryo" -Doptimize=ReleaseSmall -fno-reference-trace --zig-lib-dir "$PWD/.zig/zig/lib"
+    - name: Pack output
+      run: |
+        mv zig-out nightly
+        7z a kryo_small.7z nightly/bin/flow
+        tar -cJf kryo_small.tar.xz nightly/bin/flow
+        tar -cf kryo_small.tar nightly/bin/flow
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: nightly
+        make_latest: true
+        files: |
+          kryo_small.tar
+          kryo_small.tar.xz
+          kryo_small.7z
+    - name: Check zig binary size
+      run: |
+        ls -lh nightly/bin/
+        ls -l nightly/bin/
+
+
+
+
+
+  x1c_Fast:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup llvm
+      run: |
+        curl -o llvm.sh https://apt.llvm.org/llvm.sh
+        sudo chmod 777 llvm.sh
+        sudo ./llvm.sh 19 all
+    - name: Build
+      run: |
+        mkdir .zig && cd .zig
+        curl -o zig.tar.xz "https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz"
+        tar -xf zig.tar.xz && rm zig.tar.xz
+        mv * zig && cd zig && export PATH=$PATH:$PWD
+        cd ../..
+        zig build -Dtarget="aarch64-linux-musl" -Duse_llvm=true -Dstrip=true -Dcpu="cortex_x1c" -Doptimize=ReleaseFast -fno-reference-trace --zig-lib-dir "$PWD/.zig/zig/lib"
+    - name: Pack output
+      run: |
+        mv zig-out nightly
+        7z a x1c_fast.7z nightly/bin/flow
+        tar -cJf x1c_fast.tar.xz nightly/bin/flow
+        tar -cf x1c_fast.tar nightly/bin/flow
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: nightly
+        make_latest: true
+        files: |
+          x1c_fast.tar
+          x1c_fast.tar.xz
+          x1c_fast.7z
+    - name: Check zig binary size
+      run: |
+        ls -lh nightly/bin/
+        ls -l nightly/bin/
+        
+  x1c_Small:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup llvm
+      run: |
+        curl -o llvm.sh https://apt.llvm.org/llvm.sh
+        sudo chmod 777 llvm.sh
+        sudo ./llvm.sh 19 all
+    - name: Build
+      run: |
+        mkdir .zig && cd .zig
+        curl -o zig.tar.xz "https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz"
+        tar -xf zig.tar.xz && rm zig.tar.xz
+        mv * zig && cd zig && export PATH=$PATH:$PWD
+        cd ../..
+        zig build -Dtarget="aarch64-linux-musl" -Duse_llvm=true -Dstrip=true -Dcpu="cortex_x1c" -Doptimize=ReleaseSmall -fno-reference-trace --zig-lib-dir "$PWD/.zig/zig/lib"
+    - name: Pack output
+      run: |
+        mv zig-out nightly
+        7z a x1c_small.7z nightly/bin/flow
+        tar -cJf x1c_small.tar.xz nightly/bin/flow
+        tar -cf x1c_small.tar nightly/bin/flow
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: nightly
+        make_latest: true
+        files: |
+          x1c_small.tar
+          x1c_small.tar.xz
+          x1c_small.7z
+    - name: Check zig binary size
+      run: |
+        ls -lh nightly/bin/
+        ls -l nightly/bin/
+
+
+
+
+
+  baseline_Fast:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup llvm
+      run: |
+        curl -o llvm.sh https://apt.llvm.org/llvm.sh
+        sudo chmod 777 llvm.sh
+        sudo ./llvm.sh 19 all
+    - name: Build
+      run: |
+        mkdir .zig && cd .zig
+        curl -o zig.tar.xz "https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz"
+        tar -xf zig.tar.xz && rm zig.tar.xz
+        mv * zig && cd zig && export PATH=$PATH:$PWD
+        cd ../..
+        zig build -Dtarget="aarch64-linux-musl" -Dstrip=true -Dcpu="baseline" -Doptimize=ReleaseFast -fno-reference-trace --zig-lib-dir "$PWD/.zig/zig/lib"
+    - name: Pack output
+      run: |
+        mv zig-out nightly
+        7z a baseline_fast.7z nightly/bin/flow
+        tar -cJf baseline_fast.tar.xz nightly/bin/flow
+        tar -cf baseline_fast.tar nightly/bin/flow
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: nightly
+        make_latest: true
+        files: |
+          x1c_fast.tar
+          x1c_fast.tar.xz
+          x1c_fast.7z
+    - name: Check zig binary size
+      run: |
+        ls -lh nightly/bin/
+        ls -l nightly/bin/
+        
+  baseline_Small:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup llvm
+      run: |
+        curl -o llvm.sh https://apt.llvm.org/llvm.sh
+        sudo chmod 777 llvm.sh
+        sudo ./llvm.sh 19 all
+    - name: Build
+      run: |
+        mkdir .zig && cd .zig
+        curl -o zig.tar.xz "https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz"
+        tar -xf zig.tar.xz && rm zig.tar.xz
+        mv * zig && cd zig && export PATH=$PATH:$PWD
+        cd ../..
+        zig build -Dtarget="aarch64-linux-musl" -Dstrip=true -Dcpu="baseline" -Doptimize=ReleaseSmall -fno-reference-trace --zig-lib-dir "$PWD/.zig/zig/lib"
+    - name: Pack output
+      run: |
+        mv zig-out nightly
+        7z a baseline_small.7z nightly/bin/flow
+        tar -cJf baseline_small.tar.xz nightly/bin/flow
+        tar -cf baseline_small.tar nightly/bin/flow
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: nightly
+        make_latest: true
+        files: |
+          baseline_small.tar
+          baseline_small.tar.xz
+          baseline_small.7z
+    - name: Check zig binary size
+      run: |
+        ls -lh nightly/bin/
+        ls -l nightly/bin/
